@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # GW_API_TOKENS='{"<token>": {"user_id": "alice", "scopes": ["tickets:write"]}}'
     api_tokens: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
+    # Demo mode without an Anthropic API key: retrieval-only stand-ins for both models.
+    offline_llm: bool = False
+
     log_level: str = "INFO"
     sse_heartbeat_s: float = 15.0
     cors_origins: list[str] = Field(default_factory=list)

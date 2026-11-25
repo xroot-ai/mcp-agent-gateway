@@ -2,8 +2,7 @@
 # docker compose --profile ingest run --rm ingest  fetch + index the docs (once)
 # docker compose --profile otel up                 adds Jaeger for traces (UI on :16686)
 x-app: &app
-  build: .
-  image: mcp-agent-gateway:local
+  build: .  # one Dockerfile; the build cache shares layers across services
   env_file: .env
   volumes:
     - model-cache:/cache
