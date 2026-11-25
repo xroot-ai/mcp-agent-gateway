@@ -1,0 +1,60 @@
+# Agent definition for the Kubernetes docs assistant.
+# ${env:VAR} is required; ${env:VAR:-default} falls back to the default.
+name: rag_assistant
+
+models:
+  orchestrator:
+    model: claude-opus-5-5
+    effort: medium
+    max_tokens: 16000
+  guardrails:
+    model: claude-opus-5-5
+    effort: low
+    max_tokens: 1024
+  # Server-side refusal fallback; set to null to disable.
+  fallbacks: default
+
+limits:
+  max_tool_rounds: 6
+  run_timeout_s: 120
+  guardrails_timeout_s: 8
+  max_question_chars: 4000
+
+history:
+  mode: questions_only          # questions_only | first_and_last | none
+  max_turns: 6
+  include_previous_sources: true
+
+capabilities:
+  - name: docs
+    url: ${env:RETRIEVAL_MCP_URL:-local://retrieval}
+    token: ${env:RETRIEVAL_TOKEN:-}
+    tools:
+      search:
+        max_calls: 4
+        timeout_s: 20
+        progress: true
+        result_kind: passages
+
+  - name: tickets
+    url: ${env:TICKETS_MCP_URL:-local://tickets}
+    token: ${env:TICKETS_TOKEN:-}
+    tools:
+      create_ticket:
+        side_effect: true
+        required_scope: tickets:write
+        max_calls: 1
+        timeout_s: 10
+        context:
+          requester: user_id
+          conversation_ref: conversation_id
+
+features:
+  guardrails: true
+  titles: true
+  followups: true
+
+prompts:
+  orchestrator: configs/prompts/orchestrator.md
+  guardrails: configs/prompts/guardrails.md
+  followups: configs/prompts/followups.md

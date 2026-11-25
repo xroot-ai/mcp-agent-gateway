@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Types
+        run: uv run pyright
+      - name: Prompt checks
+        run: uv run python scripts/check_prompts.py
+      - name: Tests
+        run: uv run pytest -q
+      - name: Secret scan
+        run: uv run detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
+
+  # Evals cost tokens, so they run only when prompts, agent config or agent code change,
+  # and only when the repository has an API key secret configured.
+  evals:
+    needs: checks
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: changed
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD \
+              | grep -qE '^(configs/|src/gateway/agents/|evals/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: astral-sh/setup-uv@v6
+        if: steps.changed.outputs.run == 'true'
+      - name: Start stack, index docs, run evals
+        if: steps.changed.outputs.run == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then echo "no ANTHROPIC_API_KEY secret; skipping"; exit 0; fi
+          TOKEN=$(openssl rand -hex 24)
+          {
+            echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"
+            echo "GW_API_TOKENS={\"$TOKEN\": {\"user_id\": \"eval\", \"scopes\": []}}"
+            echo "RETRIEVAL_TOKEN=$(openssl rand -hex 24)"
+            echo "TICKETS_TOKEN=$(openssl rand -hex 24)"
+          } > .env
+          docker compose up -d --build --wait qdrant
+          docker compose --profile ingest run --rm ingest
+          docker compose up -d --wait api
+          uv sync --frozen
+          uv run python -m evals.run --token "$TOKEN" --suite all
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.changed.outputs.run == 'true'
+        with:
+          name: eval-report
+          path: evals/reports/
+          if-no-files-found: ignore

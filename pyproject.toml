@@ -1,0 +1,65 @@
+[project]
+name = "mcp-agent-gateway"
+version = "0.1.0"
+description = "Streaming RAG agent gateway over MCP tools, with guardrails, side-effect gating and evals."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "anthropic>=2.14.0",
+    "fastapi>=0.165.0",
+    "fastembed>=0.9.1",
+    "httpx>=0.28.1",
+    "jsonschema>=4.26.0",
+    "mcp>=2.3.0,<3",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.2",
+    "opentelemetry-sdk>=1.45.2",
+    "pydantic-settings>=2.16.3",
+    "pyyaml>=6.0.4",
+    "qdrant-client>=1.20.0",
+    "sqlalchemy[asyncio]>=2.1.9",
+    "sqlmodel>=0.0.50",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "detect-secrets>=1.5.0",
+    "pre-commit>=4.7.0",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gateway", "mcp_servers", "ingest", "evals"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "ASYNC", "S", "SIM"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["src", "mcp_servers", "ingest", "evals"]
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["live: needs real model keys or running services (skipped by default)"]
+addopts = "-m 'not live'"
