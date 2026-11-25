@@ -4,11 +4,11 @@ name: rag_assistant
 
 models:
   orchestrator:
-    model: claude-opus-5-5
+    model: claude-sonnet-5-5      # claude-opus-5-5 for harder corpora
     effort: medium
     max_tokens: 16000
   guardrails:
-    model: claude-opus-5-5
+    model: claude-haiku-5-5
     effort: low
     max_tokens: 1024
   # Server-side refusal fallback; set to null to disable.

@@ -134,8 +134,10 @@ unknown keys are rejected, and startup fails if any configured tool is missing o
         conversation_ref: conversation_id
 ```
 
-Models default to `claude-opus-5-5` with adaptive thinking; the orchestrator uses server-side
-refusal fallbacks (`models.fallbacks: default`, set to `null` to turn off).
+The orchestrator runs on `claude-sonnet-5-5` and the guardrails classifier on `claude-haiku-5-5`
+(a yes/no check doesn't need a large model); both use adaptive thinking, and either can be
+switched to `claude-opus-5-5` in the YAML. The orchestrator uses server-side refusal fallbacks
+(`models.fallbacks: default`, set to `null` to turn off).
 
 ## Security rules and their tests
 
