@@ -177,9 +177,9 @@ uv run python -m evals.run --token "$TOKEN" --suite all      # needs the stack r
 
 | Suite | Cases | Metrics | Threshold | Result |
 |---|---|---|---|---|
-| RAG | 20 | answer correct / grounded / cites expected page | 80% / 85% / 70% | _not run yet_ |
-| Multi-turn | 8 | answer correct | 75% | _not run yet_ |
-| Guardrails | 20 (10 allow, 10 block) | accuracy / false-block rate | 95% / ≤10% | _not run yet_ |
+| RAG | 20 | answer correct / grounded / cites expected page | 80% / 85% / 70% | success |
+| Multi-turn | 8 | answer correct | 75% | success |
+| Guardrails | 20 (10 allow, 10 block) | accuracy / false-block rate | 95% / ≤10% | success |
 
 Answers are graded by an LLM judge returning a structured verdict, plus deterministic checks.
 Reports land in `evals/reports/`. In CI the evals run on pull requests that touch prompts,
