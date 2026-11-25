@@ -68,6 +68,16 @@ uv run python -m ingest.fetch && uv run python -m ingest.run
 uv run python -m gateway.main  # MCP servers run in-process via local:// by default
 ```
 
+### No API key? Offline demo mode
+
+Set `GW_OFFLINE_LLM=true` in `.env` to run the whole stack without an Anthropic API key.
+Both models are replaced by stand-ins: the "orchestrator" runs one real search with your
+question and streams back the top passages with real `[n]` citations, and guardrails are a
+few keyword rules. Everything else is the real pipeline (SSE, progress, the guardrails
+gate, MCP over HTTP, source numbering, tickets, persistence, cancellation), which makes it
+useful for smoke tests and demos. Answers are retrieved text, not model output, and the
+gateway logs a warning at startup while it is on.
+
 ### Ask a question
 
 ```bash
@@ -182,7 +192,7 @@ uv sync
 uv run pre-commit install
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
-uv run pytest            # 130 tests, no network or API key needed
+uv run pytest            # 134 tests, no network or API key needed
 ```
 
 Tests use a scripted fake model, a scripted guardrails classifier, and real MCP servers

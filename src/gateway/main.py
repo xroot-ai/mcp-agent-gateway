@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from gateway.agents.guardrails import AnthropicGuardrails, Guardrails
 from gateway.agents.llm import LLM, AnthropicLLM
+from gateway.agents.offline import OfflineGuardrails, OfflineLLM
 from gateway.agents.orchestrator import Orchestrator
 from gateway.api import chat, history
 from gateway.api.errors import install_error_handlers
@@ -52,14 +53,23 @@ def create_app(
         toolsets = ToolsetManager()
         try:
             await toolsets.connect(config)  # startup check: every configured tool must exist
+            model: LLM | None = llm
+            guard = guardrails
+            if settings.offline_llm:
+                log.warning(
+                    "GW_OFFLINE_LLM is on: no model is called; answers are retrieved passages "
+                    "and guardrails are keyword rules. Demo use only."
+                )
+                model = model or OfflineLLM()
+                if config.features.guardrails:
+                    guard = guard or OfflineGuardrails()
             orchestrator = Orchestrator(
-                llm or AnthropicLLM(config.models.orchestrator, config.models.fallbacks),
+                model or AnthropicLLM(config.models.orchestrator, config.models.fallbacks),
                 prompts["orchestrator"],
                 prompts["followups"],
                 config.features,
                 config.limits,
             )
-            guard = guardrails
             if guard is None and config.features.guardrails:
                 guard = AnthropicGuardrails(config.models.guardrails, prompts["guardrails"])
             app.state.settings = settings

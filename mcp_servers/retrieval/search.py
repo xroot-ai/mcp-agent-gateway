@@ -64,6 +64,12 @@ class QdrantHybridSearcher:
             if self._dense is None:
                 self._dense, self._sparse = await asyncio.to_thread(self._load_models)
 
+    def preload_models(self) -> None:
+        """Load (and on first run download) the embedding models before serving, so the
+        first search doesn't spend its tool timeout on a model download."""
+        if self._dense is None:
+            self._dense, self._sparse = self._load_models()
+
     def _load_models(self):  # noqa: ANN202
         from fastembed import SparseTextEmbedding, TextEmbedding
 

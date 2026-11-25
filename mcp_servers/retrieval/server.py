@@ -92,11 +92,13 @@ def build_server(
     return server
 
 
-def http_app(settings: RetrievalSettings | None = None):  # noqa: ANN201
+def http_app(  # noqa: ANN201
+    settings: RetrievalSettings | None = None, searcher: Searcher | None = None
+):
     from mcp_servers.http_auth import BearerAuthMiddleware
 
     settings = settings or RetrievalSettings()
-    app = build_server(settings=settings).streamable_http_app(
+    app = build_server(searcher=searcher, settings=settings).streamable_http_app(
         stateless_http=True, host=settings.host
     )
     return BearerAuthMiddleware(app, settings.token, open_paths=frozenset({"/healthz"}))
@@ -107,4 +109,9 @@ if __name__ == "__main__":
 
     s = RetrievalSettings()
     logging.basicConfig(level="INFO")
-    uvicorn.run(http_app(s), host=s.host, port=s.port)
+    searcher = QdrantHybridSearcher(s)
+    app = http_app(s, searcher)  # validates the token first
+    # Load (on first run, download) the embedding models before the port opens, so the
+    # healthcheck waits for them and the first search doesn't hit its tool timeout.
+    searcher.preload_models()
+    uvicorn.run(app, host=s.host, port=s.port)
